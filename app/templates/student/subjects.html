@@ -1,0 +1,96 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col">
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+                <h1 class="mb-2">
+                    <i class="fas fa-book me-3"></i>Available Subjects
+                </h1>
+                <p class="text-muted mb-0">
+                    <i class="fas fa-calendar me-2"></i>Year {{ current_user.year }} | 
+                    <i class="fas fa-layer-group me-2"></i>Division {{ current_user.division }}
+                </p>
+            </div>
+            <div class="text-end">
+                <a href="{{ url_for('student.dashboard') }}" class="btn btn-outline-primary">
+                    <i class="fas fa-arrow-left me-2"></i>Back to Dashboard
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-12">
+        <div class="card slide-in">
+            <div class="card-header">
+                <h4 class="card-title mb-0">
+                    <i class="fas fa-search me-2"></i>Browse and Enroll in Subjects
+                </h4>
+            </div>
+            <div class="card-body">
+                {% if subjects %}
+                    <div class="row">
+                        {% for subject in subjects %}
+                        <div class="col-md-6 col-lg-4 mb-4">
+                            <div class="card h-100 slide-in" style="animation-delay: {{ loop.index * 0.1 }}s;">
+                                <div class="card-header">
+                                    <h5 class="card-title mb-0">
+                                        <i class="fas fa-book me-2"></i>{{ subject.name }}
+                                    </h5>
+                                </div>
+                                <div class="card-body">
+                                    <div class="row mb-3">
+                                        <div class="col-6">
+                                            <div class="text-center">
+                                                <i class="fas fa-calendar-alt text-primary mb-2" style="font-size: 1.5rem;"></i>
+                                                <p class="mb-0"><strong>Year</strong></p>
+                                                <p class="text-muted mb-0">{{ subject.year }}</p>
+                                            </div>
+                                        </div>
+                                        <div class="col-6">
+                                            <div class="text-center">
+                                                <i class="fas fa-layer-group text-success mb-2" style="font-size: 1.5rem;"></i>
+                                                <p class="mb-0"><strong>Division</strong></p>
+                                                <p class="text-muted mb-0">{{ subject.division }}</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    {% if subject.id in enrolled_subject_ids %}
+                                        <div class="alert alert-success mb-0 text-center">
+                                            <i class="fas fa-check-circle me-2"></i>Already Enrolled
+                                        </div>
+                                    {% else %}
+                                        <form method="POST" action="{{ url_for('student.enroll_subject', subject_id=subject.id) }}">
+                                            <div class="d-grid">
+                                                <button type="submit" class="btn btn-primary">
+                                                    <i class="fas fa-plus-circle me-2"></i>Enroll Now
+                                                </button>
+                                            </div>
+                                        </form>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <div class="text-center py-5">
+                        <div class="mb-4">
+                            <i class="fas fa-book-open text-muted" style="font-size: 4rem;"></i>
+                        </div>
+                        <h4 class="text-muted mb-3">No Subjects Available</h4>
+                        <p class="text-muted mb-4">No subjects are currently available for your year and division.</p>
+                        <a href="{{ url_for('student.dashboard') }}" class="btn btn-primary">
+                            <i class="fas fa-arrow-left me-2"></i>Back to Dashboard
+                        </a>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

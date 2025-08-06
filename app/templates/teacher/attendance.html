@@ -1,0 +1,149 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col">
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+                <h1 class="mb-2">
+                    <i class="fas fa-clipboard-check me-3"></i>Attendance Report
+                </h1>
+                <p class="text-muted mb-0">
+                    <i class="fas fa-book me-2"></i>{{ subject.name }} | 
+                    <i class="fas fa-calendar me-2"></i>Year {{ subject.year }} | 
+                    <i class="fas fa-layer-group me-2"></i>Division {{ subject.division }}
+                </p>
+            </div>
+            <div class="text-end">
+                <a href="{{ url_for('teacher.dashboard') }}" class="btn btn-outline-primary">
+                    <i class="fas fa-arrow-left me-2"></i>Back to Dashboard
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-12">
+        <div class="card slide-in">
+            <div class="card-header">
+                <div class="d-flex justify-content-between align-items-center">
+                    <h4 class="card-title mb-0">
+                        <i class="fas fa-users me-2"></i>Student Attendance
+                    </h4>
+                    <div class="d-flex gap-2">
+                        <form method="GET" class="d-flex gap-2">
+                            <div class="input-group">
+                                <span class="input-group-text">
+                                    <i class="fas fa-calendar"></i>
+                                </span>
+                                <input type="date" name="date" value="{{ date }}" class="form-control">
+                            </div>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-filter me-1"></i>Filter
+                            </button>
+                        </form>
+                        <a href="{{ url_for('teacher.export_attendance', subject_id=subject.id, date=date) }}" 
+                           class="btn btn-success">
+                            <i class="fas fa-download me-1"></i>Export CSV
+                        </a>
+                    </div>
+                </div>
+            </div>
+            <div class="card-body">
+                {% if attendance_records %}
+                    <div class="row mb-4">
+                        <div class="col-md-4">
+                            <div class="card bg-primary text-white">
+                                <div class="card-body text-center">
+                                    <i class="fas fa-users mb-2" style="font-size: 2rem;"></i>
+                                    <h4>{{ attendance_records|length }}</h4>
+                                    <p class="mb-0">Students Present</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="card bg-success text-white">
+                                <div class="card-body text-center">
+                                    <i class="fas fa-percentage mb-2" style="font-size: 2rem;"></i>
+                                    <h4>{{ "%.1f"|format((attendance_records|length / (subject.enrollments|length if subject.enrollments else 1)) * 100) }}%</h4>
+                                    <p class="mb-0">Attendance Rate</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="card bg-info text-white">
+                                <div class="card-body text-center">
+                                    <i class="fas fa-calendar-day mb-2" style="font-size: 2rem;"></i>
+                                    <h4>{{ date }}</h4>
+                                    <p class="mb-0">Selected Date</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th><i class="fas fa-hashtag me-1"></i>Roll Number</th>
+                                    <th><i class="fas fa-user me-1"></i>Name</th>
+                                    <th><i class="fas fa-id-card me-1"></i>Registration Number</th>
+                                    <th><i class="fas fa-clock me-1"></i>Class Time</th>
+                                    <th><i class="fas fa-calendar-check me-1"></i>Marked At</th>
+                                    <th><i class="fas fa-network-wired me-1"></i>IP Address</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for record in attendance_records %}
+                                <tr>
+                                    <td>
+                                        <span class="badge bg-primary">{{ record.roll_number }}</span>
+                                    </td>
+                                    <td>
+                                        <i class="fas fa-user-graduate me-2"></i>{{ record.name }}
+                                    </td>
+                                    <td>{{ record.registration_number }}</td>
+                                    <td>
+                                        {% if record.class_start_time and record.class_end_time %}
+                                            <i class="fas fa-clock me-1"></i>
+                                            {{ record.class_start_time.strftime('%H:%M') }} - {{ record.class_end_time.strftime('%H:%M') }}
+                                        {% else %}
+                                            <span class="text-muted">N/A</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-success">
+                                            <i class="fas fa-check me-1"></i>{{ record.marked_at.strftime('%H:%M:%S') }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <small class="text-muted">{{ record.ip_address }}</small>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <div class="text-center py-5">
+                        <div class="mb-4">
+                            <i class="fas fa-clipboard-list text-muted" style="font-size: 4rem;"></i>
+                        </div>
+                        <h4 class="text-muted mb-3">No Attendance Records</h4>
+                        <p class="text-muted mb-4">No attendance records found for the selected date.</p>
+                        <div class="d-flex justify-content-center gap-2">
+                            <a href="{{ url_for('teacher.generate_qr', subject_id=subject.id) }}" class="btn btn-primary">
+                                <i class="fas fa-qrcode me-2"></i>Generate QR Code
+                            </a>
+                            <a href="{{ url_for('teacher.dashboard') }}" class="btn btn-outline-secondary">
+                                <i class="fas fa-arrow-left me-2"></i>Back to Dashboard
+                            </a>
+                        </div>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

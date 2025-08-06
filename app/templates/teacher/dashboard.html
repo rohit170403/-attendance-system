@@ -1,0 +1,135 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col">
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+                <h1 class="mb-2">
+                    <i class="fas fa-chalkboard-teacher me-3"></i>Teacher Dashboard
+                </h1>
+                <p class="text-muted mb-0">
+                    <i class="fas fa-user me-2"></i>Welcome back, {{ current_user.name }}!
+                </p>
+            </div>
+            <div class="text-end">
+                <span class="badge bg-success fs-6">
+                    <i class="fas fa-circle me-1"></i>Online
+                </span>
+            </div>
+        </div>
+    </div>
+    <div class="col-auto">
+        <a href="{{ url_for('teacher.create_subject') }}" class="btn btn-primary btn-lg">
+            <i class="fas fa-plus-circle me-2"></i>Create New Subject
+        </a>
+    </div>
+</div>
+
+<div class="row">
+    {% for subject in subjects %}
+    <div class="col-md-6 col-lg-4 mb-4">
+        <div class="card slide-in" style="animation-delay: {{ loop.index * 0.1 }}s;">
+            <div class="card-header">
+                <div class="d-flex justify-content-between align-items-center">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-book me-2"></i>{{ subject.name }}
+                    </h5>
+                    <span class="badge bg-info">
+                        <i class="fas fa-users me-1"></i>{{ subject.enrollments|length if subject.enrollments else 0 }}
+                    </span>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="row mb-3">
+                    <div class="col-6">
+                        <div class="text-center">
+                            <i class="fas fa-calendar-alt text-primary mb-2" style="font-size: 1.5rem;"></i>
+                            <p class="mb-0"><strong>Year</strong></p>
+                            <p class="text-muted mb-0">{{ subject.year }}</p>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="text-center">
+                            <i class="fas fa-layer-group text-success mb-2" style="font-size: 1.5rem;"></i>
+                            <p class="mb-0"><strong>Division</strong></p>
+                            <p class="text-muted mb-0">{{ subject.division }}</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="d-grid gap-2">
+                    <a href="{{ url_for('teacher.generate_qr', subject_id=subject.id) }}" 
+                       class="btn btn-success">
+                        <i class="fas fa-qrcode me-2"></i>Generate QR Code
+                    </a>
+                    <a href="{{ url_for('teacher.view_attendance', subject_id=subject.id) }}" 
+                       class="btn btn-info">
+                        <i class="fas fa-chart-bar me-2"></i>View Attendance
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% else %}
+    <div class="col-12">
+        <div class="card slide-in">
+            <div class="card-body text-center py-5">
+                <div class="mb-4">
+                    <i class="fas fa-book-open text-muted" style="font-size: 4rem;"></i>
+                </div>
+                <h4 class="text-muted mb-3">No Subjects Created Yet</h4>
+                <p class="text-muted mb-4">Start by creating your first subject to begin managing attendance.</p>
+                <a href="{{ url_for('teacher.create_subject') }}" class="btn btn-primary btn-lg">
+                    <i class="fas fa-plus-circle me-2"></i>Create Your First Subject
+                </a>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+
+{% if subjects %}
+<div class="row mt-5">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-chart-line me-2"></i>Quick Statistics
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row text-center">
+                    <div class="col-md-4">
+                        <div class="p-3">
+                            <i class="fas fa-book text-primary mb-3" style="font-size: 2rem;"></i>
+                            <h3 class="text-primary">{{ subjects|length }}</h3>
+                            <p class="text-muted mb-0">Total Subjects</p>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="p-3">
+                            <i class="fas fa-users text-success mb-3" style="font-size: 2rem;"></i>
+                            <h3 class="text-success">
+                                {% set total_students = 0 %}
+                                {% for subject in subjects %}
+                                    {% set total_students = total_students + (subject.enrollments|length if subject.enrollments else 0) %}
+                                {% endfor %}
+                                {{ total_students }}
+                            </h3>
+                            <p class="text-muted mb-0">Total Students</p>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="p-3">
+                            <i class="fas fa-qrcode text-info mb-3" style="font-size: 2rem;"></i>
+                            <h3 class="text-info">{{ subjects|length }}</h3>
+                            <p class="text-muted mb-0">Active QR Codes</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endblock %}

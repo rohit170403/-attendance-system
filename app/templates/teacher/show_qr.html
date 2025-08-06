@@ -1,0 +1,100 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-10 col-lg-8">
+        <div class="card slide-in">
+            <div class="card-header text-center">
+                <div class="mb-3">
+                    <i class="fas fa-qrcode" style="font-size: 3rem; color: white;"></i>
+                </div>
+                <h4 class="card-title mb-0">QR Code Generated</h4>
+                <p class="text-white-50 mb-0">for {{ subject.name }}</p>
+            </div>
+            <div class="card-body text-center">
+                <div class="alert alert-info">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="d-flex align-items-center">
+                                <i class="fas fa-play-circle text-primary me-3" style="font-size: 1.5rem;"></i>
+                                <div class="text-start">
+                                    <strong>Start Time:</strong><br>
+                                    {{ class_start_time.strftime('%Y-%m-%d %H:%M') }}
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="d-flex align-items-center">
+                                <i class="fas fa-stop-circle text-danger me-3" style="font-size: 1.5rem;"></i>
+                                <div class="text-start">
+                                    <strong>End Time:</strong><br>
+                                    {{ class_end_time.strftime('%Y-%m-%d %H:%M') }}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="qr-container">
+                    <img src="data:image/png;base64,{{ qr_image }}" alt="QR Code" class="qr-image">
+                </div>
+                
+                <div class="mt-4">
+                    <div class="alert alert-warning">
+                        <div class="d-flex align-items-center justify-content-center">
+                            <i class="fas fa-clock me-3" style="font-size: 1.5rem;"></i>
+                            <div>
+                                <strong>QR Code expires in: <span id="countdown" class="text-danger">30</span> seconds</strong>
+                            </div>
+                        </div>
+                    </div>
+                    <p class="text-muted">
+                        <i class="fas fa-info-circle me-1"></i>
+                        Students must scan this QR code within 30 seconds to mark attendance.
+                    </p>
+                </div>
+                
+                <div class="mt-4">
+                    <a href="{{ url_for('teacher.dashboard') }}" class="btn btn-primary btn-lg">
+                        <i class="fas fa-arrow-left me-2"></i>Back to Dashboard
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Countdown timer for QR code expiration (30 seconds)
+let timeLeft = 30;
+const countdownElement = document.getElementById('countdown');
+
+const countdown = setInterval(function() {
+    timeLeft--;
+    countdownElement.textContent = timeLeft;
+    
+    // Change color based on time remaining
+    if (timeLeft <= 10) {
+        countdownElement.style.color = '#dc3545'; // Red
+        countdownElement.style.fontWeight = 'bold';
+    } else if (timeLeft <= 20) {
+        countdownElement.style.color = '#fd7e14'; // Orange
+    }
+    
+    if (timeLeft <= 0) {
+        clearInterval(countdown);
+        countdownElement.textContent = '0';
+        document.querySelector('.qr-container').innerHTML = 
+            `<div class="alert alert-danger">
+                <div class="text-center">
+                    <i class="fas fa-exclamation-triangle mb-3" style="font-size: 3rem;"></i>
+                    <h5><strong>QR Code Expired!</strong></h5>
+                    <p class="mb-0">This QR code is no longer valid.</p>
+                </div>
+            </div>`;
+    }
+}, 1000);
+</script>
+{% endblock %}

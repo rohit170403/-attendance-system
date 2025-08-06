@@ -1,0 +1,69 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8 col-lg-6">
+        <div class="card slide-in">
+            <div class="card-header text-center">
+                <div class="mb-3">
+                    <i class="fas fa-plus-circle" style="font-size: 3rem; color: white;"></i>
+                </div>
+                <h4 class="card-title mb-0">Create New Subject</h4>
+                <p class="text-white-50 mb-0">Add a new subject to your teaching portfolio</p>
+            </div>
+            <div class="card-body">
+                <form method="POST">
+                    <div class="mb-4">
+                        <label for="name" class="form-label">
+                            <i class="fas fa-book me-2"></i>Subject Name
+                        </label>
+                        <input type="text" class="form-control form-control-lg" id="name" name="name" 
+                               placeholder="Enter subject name" required>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-4">
+                                <label for="year" class="form-label">
+                                    <i class="fas fa-calendar me-2"></i>Year
+                                </label>
+                                <select class="form-select form-select-lg" id="year" name="year" required>
+                                    <option value="">Select Year</option>
+                                    <option value="1">First Year</option>
+                                    <option value="2">Second Year</option>
+                                    <option value="3">Third Year</option>
+                                    <option value="4">Fourth Year</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-4">
+                                <label for="division" class="form-label">
+                                    <i class="fas fa-layer-group me-2"></i>Division
+                                </label>
+                                <select class="form-select form-select-lg" id="division" name="division" required>
+                                    <option value="">Select Division</option>
+                                    <option value="A">A</option>
+                                    <option value="B">B</option>
+                                    <option value="C">C</option>
+                                    <option value="D">D</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="d-grid">
+                        <button type="submit" class="btn btn-primary btn-lg">
+                            <i class="fas fa-plus-circle me-2"></i>Create Subject
+                        </button>
+                    </div>
+                </form>
+                <hr class="my-4">
+                <div class="text-center">
+                    <a href="{{ url_for('teacher.dashboard') }}" class="btn btn-outline-secondary">
+                        <i class="fas fa-arrow-left me-2"></i>Back to Dashboard
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 
