@@ -1,0 +1,156 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row mb-3">
+    <div class="col d-flex align-items-center justify-content-between">
+        <div>
+            <h2 class="mb-1"><i class="fas fa-chart-line me-2"></i>Analytics & Reporting</h2>
+            <div class="text-muted">Updated {{ generated_at.strftime('%Y-%m-%d %H:%M') }} UTC</div>
+        </div>
+        <div>
+            <a href="{{ url_for('teacher.dashboard') }}" class="btn btn-secondary"><i class="fas fa-arrow-left me-2"></i>Back</a>
+        </div>
+    </div>
+    {% if not daily_labels %}
+    <div class="col-12">
+        <div class="alert alert-info">No subjects found. Create a subject to view analytics.</div>
+    </div>
+    {% endif %}
+    <div class="col-12">
+        <div class="card mb-3">
+            <div class="card-header"><strong>Daily Attendance % (Last 30 Days)</strong></div>
+            <div class="card-body">
+                <canvas id="dailyChart" height="100"></canvas>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card mb-3">
+            <div class="card-header"><strong>Weekly Average % (Last 8 Weeks)</strong></div>
+            <div class="card-body">
+                <canvas id="weeklyChart" height="160"></canvas>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card mb-3">
+            <div class="card-header"><strong>Monthly Attendance % (Last 12 Months)</strong></div>
+            <div class="card-body">
+                <canvas id="monthlyChart" height="160"></canvas>
+            </div>
+        </div>
+    </div>
+    <div class="col-12">
+        <div class="card mb-3">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <strong>Course-wise Attendance Heatmap (Last 30 Days)</strong>
+                <small class="text-muted">Red highlights low attendance</small>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-bordered align-middle mb-0">
+                        <thead>
+                            <tr>
+                                <th>Course</th>
+                                <th>Division</th>
+                                <th class="text-end">Attendance %</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for row in heatmap %}
+                            {% set meta = (subjects_meta | selectattr('id', 'equalto', row.subject_id) | list)[0] %}
+                            {% set pct = row.pct %}
+                            <tr>
+                                <td>{{ meta.name }}</td>
+                                <td>{{ meta.division }}</td>
+                                <td class="text-end">
+                                    <span class="badge {% if pct < 60 %}bg-danger{% elif pct < 75 %}bg-warning{% else %}bg-success{% endif %}">{{ '%.2f' % pct }}%</span>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-12">
+        <div class="card mb-3">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <strong>Defaulters (Below 75%)</strong>
+                <div>
+                    <a class="btn btn-sm btn-outline-primary" href="{{ url_for('teacher.export_defaulters_csv') }}"><i class="fas fa-file-csv me-1"></i>CSV</a>
+                    <a class="btn btn-sm btn-outline-danger" href="{{ url_for('teacher.export_defaulters_pdf') }}"><i class="fas fa-file-pdf me-1"></i>PDF</a>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>Registration No.</th>
+                                <th>Name</th>
+                                <th class="text-end">Attended</th>
+                                <th class="text-end">Total</th>
+                                <th class="text-end">%</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for s in defaulters %}
+                            <tr>
+                                <td>{{ s.registration_number }}</td>
+                                <td>{{ s.name }}</td>
+                                <td class="text-end">{{ s.attended }}</td>
+                                <td class="text-end">{{ s.total }}</td>
+                                <td class="text-end">{{ '%.2f' % s.percentage }}</td>
+                            </tr>
+                            {% else %}
+                            <tr>
+                                <td colspan="5" class="text-center text-muted">No defaulters found.</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+const dailyLabels = {{ daily_labels | tojson }};
+const dailyValues = {{ daily_values | tojson }};
+const weeklyLabels = {{ weekly_labels | tojson }};
+const weeklyValues = {{ weekly_values | tojson }};
+const monthlyLabels = {{ monthly_labels | tojson }};
+const monthlyValues = {{ monthly_values | tojson }};
+
+if (dailyLabels.length) {
+    new Chart(document.getElementById('dailyChart'), {
+        type: 'line',
+        data: { labels: dailyLabels, datasets: [{ label: 'Attendance %', data: dailyValues, borderColor: '#0d6efd', backgroundColor: 'rgba(13,110,253,0.15)', fill: true, tension: 0.3 }] },
+        options: { responsive: true, maintainAspectRatio: false, scales: { y: { min: 0, max: 100, ticks: { callback: v => v + '%' }}}}
+    });
+}
+if (weeklyLabels.length) {
+    new Chart(document.getElementById('weeklyChart'), {
+        type: 'bar',
+        data: { labels: weeklyLabels, datasets: [{ label: 'Avg %', data: weeklyValues, backgroundColor: '#198754' }] },
+        options: { responsive: true, maintainAspectRatio: false, scales: { y: { min: 0, max: 100, ticks: { callback: v => v + '%' }}}}
+    });
+}
+if (monthlyLabels.length) {
+    new Chart(document.getElementById('monthlyChart'), {
+        type: 'bar',
+        data: { labels: monthlyLabels, datasets: [{ label: 'Attendance %', data: monthlyValues, backgroundColor: '#0dcaf0' }] },
+        options: { responsive: true, maintainAspectRatio: false, scales: { y: { min: 0, max: 100, ticks: { callback: v => v + '%' }}}}
+    });
+}
+</script>
+{% endblock %}
+
+
+

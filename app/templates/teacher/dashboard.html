@@ -20,9 +20,23 @@
         </div>
     </div>
     <div class="col-auto">
-        <a href="{{ url_for('teacher.create_subject') }}" class="btn btn-primary btn-lg">
-            <i class="fas fa-plus-circle me-2"></i>Create New Subject
-        </a>
+        <div class="d-flex flex-wrap gap-2">
+            <a href="{{ url_for('teacher.upload_results_csv') }}" class="btn btn-success btn-lg">
+                <i class="fas fa-file-csv me-2"></i>Upload Results
+            </a>
+            <a href="{{ url_for('teacher.leave_applications') }}" class="btn btn-warning btn-lg">
+                <i class="fas fa-file-alt me-2"></i>Leave Applications
+            </a>
+            <a href="{{ url_for('teacher.create_subject') }}" class="btn btn-primary btn-lg">
+                <i class="fas fa-plus-circle me-2"></i>Create New Subject
+            </a>
+            <a href="{{ url_for('teacher.analytics') }}" class="btn btn-info btn-lg">
+                <i class="fas fa-chart-line me-2"></i>Analytics
+            </a>
+            <a href="{{ url_for('teacher.enter_results_manual') }}" class="btn btn-success">
+                <i class="fas fa-pen-to-square me-2"></i>Enter Results
+            </a>
+        </div>
     </div>
 </div>
 
@@ -65,6 +79,10 @@
                     <a href="{{ url_for('teacher.view_attendance', subject_id=subject.id) }}" 
                        class="btn btn-info">
                         <i class="fas fa-chart-bar me-2"></i>View Attendance
+                    </a>
+                    <a href="{{ url_for('teacher.subject_leave_applications', subject_id=subject.id) }}" 
+                       class="btn btn-warning">
+                        <i class="fas fa-file-alt me-2"></i>Leave Applications
                     </a>
                 </div>
             </div>

@@ -27,6 +27,16 @@
                                 </a>
                             </li>
                             <li class="nav-item">
+                                <a class="nav-link" href="{{ url_for('teacher.enter_results_manual') }}">
+                                    <i class="fas fa-pen-to-square me-1"></i>Enter Results
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" href="{{ url_for('teacher.upload_results_csv') }}">
+                                    <i class="fas fa-file-csv me-1"></i>Upload Results
+                                </a>
+                            </li>
+                            <li class="nav-item">
                                 <a class="nav-link" href="{{ url_for('teacher.create_subject') }}">
                                     <i class="fas fa-plus-circle me-1"></i>Create Subject
                                 </a>
@@ -35,6 +45,11 @@
                             <li class="nav-item">
                                 <a class="nav-link" href="{{ url_for('student.dashboard') }}">
                                     <i class="fas fa-tachometer-alt me-1"></i>Dashboard
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" href="{{ url_for('student.view_results') }}">
+                                    <i class="fas fa-graduation-cap me-1"></i>My Results
                                 </a>
                             </li>
                             <li class="nav-item">

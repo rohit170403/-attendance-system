@@ -76,3 +76,39 @@ class Attendance(db.Model):
     __table_args__ = (
         db.UniqueConstraint('student_id', 'qr_code_id', name='unique_attendance'),
     )
+
+class LeaveApplication(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    student_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    subject_id = db.Column(db.Integer, db.ForeignKey('subject.id'), nullable=False)
+    leave_type = db.Column(db.String(50), nullable=False)  # 'sick', 'personal', 'emergency', etc.
+    start_date = db.Column(db.Date, nullable=False)
+    end_date = db.Column(db.Date, nullable=False)
+    reason = db.Column(db.Text, nullable=False)
+    status = db.Column(db.String(20), default='pending')  # 'pending', 'approved', 'rejected'
+    teacher_remarks = db.Column(db.Text)
+    submitted_at = db.Column(db.DateTime, default=datetime.utcnow)
+    reviewed_at = db.Column(db.DateTime)
+    
+    # Relationships
+    student = db.relationship('User', backref='leave_applications')
+    subject = db.relationship('Subject', backref='leave_applications')
+
+class Result(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    student_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    subject_id = db.Column(db.Integer, db.ForeignKey('subject.id'), nullable=False)
+    exam_type = db.Column(db.String(50), nullable=False)
+    marks_obtained = db.Column(db.Float, nullable=False)
+    max_marks = db.Column(db.Float, nullable=False)
+    remarks = db.Column(db.Text)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    # Relationships
+    student = db.relationship('User', backref='results')
+    subject = db.relationship('Subject', backref='results')
+
+    __table_args__ = (
+        db.UniqueConstraint('student_id', 'subject_id', 'exam_type', name='unique_result_per_exam'),
+    )
