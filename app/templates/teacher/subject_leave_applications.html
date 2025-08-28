@@ -1,0 +1,200 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2>
+                <i class="fas fa-file-alt me-3"></i>Leave Applications - {{ subject.name }}
+            </h2>
+            <div class="d-flex gap-2">
+                <a href="{{ url_for('teacher.leave_applications') }}" class="btn btn-info">
+                    <i class="fas fa-list me-2"></i>All Applications
+                </a>
+                <a href="{{ url_for('teacher.dashboard') }}" class="btn btn-secondary">
+                    <i class="fas fa-arrow-left me-2"></i>Back to Dashboard
+                </a>
+            </div>
+        </div>
+        
+        <div class="card slide-in mb-4">
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <h5 class="card-title">
+                            <i class="fas fa-book me-2"></i>Subject Information
+                        </h5>
+                        <table class="table table-borderless">
+                            <tr>
+                                <td><strong>Subject Name:</strong></td>
+                                <td>{{ subject.name }}</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Year:</strong></td>
+                                <td>{{ subject.year }}</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Division:</strong></td>
+                                <td>{{ subject.division }}</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Total Students:</strong></td>
+                                <td>{{ subject.enrollments|length if subject.enrollments else 0 }}</td>
+                            </tr>
+                        </table>
+                    </div>
+                    <div class="col-md-6">
+                        <h5 class="card-title">
+                            <i class="fas fa-chart-pie me-2"></i>Application Statistics
+                        </h5>
+                        <div class="row text-center">
+                            <div class="col-4">
+                                <div class="border rounded p-3">
+                                    <h4 class="text-warning mb-1">{{ leave_applications|selectattr('status', 'equalto', 'pending')|list|length }}</h4>
+                                    <small class="text-muted">Pending</small>
+                                </div>
+                            </div>
+                            <div class="col-4">
+                                <div class="border rounded p-3">
+                                    <h4 class="text-success mb-1">{{ leave_applications|selectattr('status', 'equalto', 'approved')|list|length }}</h4>
+                                    <small class="text-muted">Approved</small>
+                                </div>
+                            </div>
+                            <div class="col-4">
+                                <div class="border rounded p-3">
+                                    <h4 class="text-danger mb-1">{{ leave_applications|selectattr('status', 'equalto', 'rejected')|list|length }}</h4>
+                                    <small class="text-muted">Rejected</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        {% if leave_applications %}
+        <div class="card slide-in">
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th><i class="fas fa-user me-1"></i>Student</th>
+                                <th><i class="fas fa-tag me-1"></i>Leave Type</th>
+                                <th><i class="fas fa-calendar me-1"></i>Duration</th>
+                                <th><i class="fas fa-clock me-1"></i>Submitted</th>
+                                <th><i class="fas fa-info-circle me-1"></i>Status</th>
+                                <th><i class="fas fa-comment me-1"></i>Reason</th>
+                                <th><i class="fas fa-cogs me-1"></i>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for app in leave_applications %}
+                            <tr>
+                                <td>
+                                    <strong>{{ app.student.name }}</strong>
+                                    <br>
+                                    <small class="text-muted">{{ app.student.registration_number }}</small>
+                                </td>
+                                <td>
+                                    <span class="badge bg-info">{{ app.leave_type.title() }}</span>
+                                </td>
+                                <td>
+                                    <div>
+                                        <strong>{{ app.start_date.strftime('%d %b %Y') }}</strong>
+                                        <br>
+                                        <small class="text-muted">to {{ app.end_date.strftime('%d %b %Y') }}</small>
+                                    </div>
+                                </td>
+                                <td>
+                                    <div>
+                                        <strong>{{ app.submitted_at.strftime('%d %b %Y') }}</strong>
+                                        <br>
+                                        <small class="text-muted">{{ app.submitted_at.strftime('%H:%M') }}</small>
+                                    </div>
+                                </td>
+                                <td>
+                                    {% if app.status == 'pending' %}
+                                        <span class="badge bg-warning">
+                                            <i class="fas fa-clock me-1"></i>Pending
+                                        </span>
+                                    {% elif app.status == 'approved' %}
+                                        <span class="badge bg-success">
+                                            <i class="fas fa-check me-1"></i>Approved
+                                        </span>
+                                    {% elif app.status == 'rejected' %}
+                                        <span class="badge bg-danger">
+                                            <i class="fas fa-times me-1"></i>Rejected
+                                        </span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <button class="btn btn-sm btn-outline-info" 
+                                            data-bs-toggle="tooltip" 
+                                            data-bs-placement="top" 
+                                            title="{{ app.reason }}">
+                                        <i class="fas fa-eye"></i> View
+                                    </button>
+                                </td>
+                                <td>
+                                                                         {% if app.status == 'pending' %}
+                                         <form method="POST" action="{{ url_for('teacher.review_leave_application', app_id=app.id) }}" style="display: inline;">
+                                             <input type="hidden" name="action" value="approve">
+                                             <input type="hidden" name="remarks" value="">
+                                             <button type="submit" class="btn btn-sm btn-success me-1" 
+                                                     onclick="return confirm('Are you sure you want to approve this leave application?')">
+                                                 <i class="fas fa-check"></i> Approve
+                                             </button>
+                                         </form>
+                                         <form method="POST" action="{{ url_for('teacher.review_leave_application', app_id=app.id) }}" style="display: inline;">
+                                             <input type="hidden" name="action" value="reject">
+                                             <input type="hidden" name="remarks" value="">
+                                             <button type="submit" class="btn btn-sm btn-danger" 
+                                                     onclick="return confirm('Are you sure you want to reject this leave application?')">
+                                                 <i class="fas fa-times"></i> Reject
+                                             </button>
+                                         </form>
+                                     {% else %}
+                                         <span class="text-muted">Reviewed</span>
+                                         {% if app.teacher_remarks %}
+                                             <br>
+                                             <button class="btn btn-sm btn-outline-secondary mt-1" 
+                                                     data-bs-toggle="tooltip" 
+                                                     data-bs-placement="top" 
+                                                     title="{{ app.teacher_remarks }}">
+                                                 <i class="fas fa-comment"></i> Remarks
+                                             </button>
+                                         {% endif %}
+                                     {% endif %}
+                                </td>
+                            </tr>
+                            
+                            
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        {% else %}
+        <div class="card slide-in">
+            <div class="card-body text-center py-5">
+                <i class="fas fa-file-alt mb-3" style="font-size: 4rem; color: var(--gray-400);"></i>
+                <h4 class="text-muted">No Leave Applications</h4>
+                <p class="text-muted mb-4">No leave applications have been submitted for this subject yet.</p>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<script>
+// Initialize tooltips
+document.addEventListener('DOMContentLoaded', function() {
+    var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+    var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+        return new bootstrap.Tooltip(tooltipTriggerEl);
+    });
+});
+</script>
+{% endblock %}

@@ -66,6 +66,12 @@
                             <a href="{{ url_for('student.view_attendance') }}" class="btn btn-info">
                                 <i class="fas fa-chart-bar"></i> View Attendance
                             </a>
+                            <a href="{{ url_for('student.view_results') }}" class="btn btn-success">
+                                <i class="fas fa-graduation-cap"></i> View Results
+                            </a>
+                            <a href="{{ url_for('student.leave_application') }}" class="btn btn-warning">
+                                <i class="fas fa-file-alt"></i> Leave Application
+                            </a>
                         </div>
                     </div>
                 </div>
@@ -177,6 +183,54 @@
     </div>
 </div>
 
+<!-- Chatbot Button (Fixed Position) -->
+<div class="chatbot-button" id="chatbot-button">
+    <i class="fas fa-robot"></i>
+    <span class="chatbot-tooltip">Ask me anything!</span>
+</div>
+
+<!-- Chatbot Interface -->
+<div class="chatbot-container" id="chatbot-container">
+    <div class="chatbot-header">
+        <div class="chatbot-title">
+            <i class="fas fa-robot me-2"></i>
+            <span>Student Assistant</span>
+        </div>
+        <button class="chatbot-close" id="chatbot-close">
+            <i class="fas fa-times"></i>
+        </button>
+    </div>
+    
+    <div class="chatbot-messages" id="chatbot-messages">
+        <div class="message bot-message">
+            <div class="message-avatar">
+                <i class="fas fa-robot"></i>
+            </div>
+            <div class="message-content">
+                <div class="message-text">
+                    👋 Hello {{ current_user.name }}! I'm your AI assistant. How can I help you today?
+                </div>
+                <div class="message-time">12:00</div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="chatbot-input-container">
+        <div class="chatbot-suggestions" id="chatbot-suggestions">
+            <button class="suggestion-btn" data-suggestion="What's my attendance?">📊 Attendance</button>
+            <button class="suggestion-btn" data-suggestion="Tell me about fees">💰 Fees</button>
+            <button class="suggestion-btn" data-suggestion="Show my subjects">📚 Subjects</button>
+            <button class="suggestion-btn" data-suggestion="Class schedule">📅 Schedule</button>
+        </div>
+        <div class="chatbot-input-wrapper">
+            <input type="text" id="chatbot-input" placeholder="Type your message..." maxlength="500">
+            <button id="chatbot-send">
+                <i class="fas fa-paper-plane"></i>
+            </button>
+        </div>
+    </div>
+</div>
+
 {% endblock %}
 
 {% block scripts %}
@@ -277,13 +331,154 @@ function stopScanning() {
     }
 }
 
-// Initialize event listeners when page loads
+// Chatbot functionality
 document.addEventListener('DOMContentLoaded', function() {
-    // Add click event to start scan button
+    // QR Scanner event listeners
     document.getElementById('start-scan-btn').addEventListener('click', startScanning);
-    
-    // Add click event to stop scan button
     document.getElementById('stop-scan-btn').addEventListener('click', stopScanning);
+    
+    // Chatbot event listeners
+    const chatbotButton = document.getElementById('chatbot-button');
+    const chatbotContainer = document.getElementById('chatbot-container');
+    const chatbotClose = document.getElementById('chatbot-close');
+    const chatbotInput = document.getElementById('chatbot-input');
+    const chatbotSend = document.getElementById('chatbot-send');
+    const chatbotMessages = document.getElementById('chatbot-messages');
+    const suggestionBtns = document.querySelectorAll('.suggestion-btn');
+    
+    // Toggle chatbot
+    chatbotButton.addEventListener('click', function() {
+        chatbotContainer.classList.toggle('active');
+        if (chatbotContainer.classList.contains('active')) {
+            chatbotInput.focus();
+        }
+    });
+    
+    chatbotClose.addEventListener('click', function() {
+        chatbotContainer.classList.remove('active');
+    });
+    
+    // Send message function
+    function sendMessage(message) {
+        if (!message.trim()) return;
+        
+        // Add user message
+        addMessage(message, 'user');
+        
+        // Clear input
+        chatbotInput.value = '';
+        
+        // Show typing indicator
+        const typingIndicator = addTypingIndicator();
+        
+        // Send to backend
+        fetch('/student/chatbot', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ message: message })
+        })
+        .then(response => response.json())
+        .then(data => {
+            // Remove typing indicator
+            typingIndicator.remove();
+            
+            // Add bot response
+            addMessage(data.response, 'bot', data.timestamp);
+        })
+        .catch(error => {
+            typingIndicator.remove();
+            addMessage('Sorry, I encountered an error. Please try again.', 'bot');
+        });
+    }
+    
+    // Add message to chat
+    function addMessage(text, sender, timestamp = null) {
+        const messageDiv = document.createElement('div');
+        messageDiv.className = `message ${sender}-message`;
+        
+        const time = timestamp || new Date().toLocaleTimeString('en-US', { 
+            hour: '2-digit', 
+            minute: '2-digit',
+            hour12: false 
+        });
+        
+        if (sender === 'user') {
+            messageDiv.innerHTML = `
+                <div class="message-content">
+                    <div class="message-text">${text}</div>
+                    <div class="message-time">${time}</div>
+                </div>
+                <div class="message-avatar">
+                    <i class="fas fa-user"></i>
+                </div>
+            `;
+        } else {
+            messageDiv.innerHTML = `
+                <div class="message-avatar">
+                    <i class="fas fa-robot"></i>
+                </div>
+                <div class="message-content">
+                    <div class="message-text">${formatBotMessage(text)}</div>
+                    <div class="message-time">${time}</div>
+                </div>
+            `;
+        }
+        
+        chatbotMessages.appendChild(messageDiv);
+        chatbotMessages.scrollTop = chatbotMessages.scrollHeight;
+    }
+    
+    // Add typing indicator
+    function addTypingIndicator() {
+        const typingDiv = document.createElement('div');
+        typingDiv.className = 'message bot-message typing-indicator';
+        typingDiv.innerHTML = `
+            <div class="message-avatar">
+                <i class="fas fa-robot"></i>
+            </div>
+            <div class="message-content">
+                <div class="message-text">
+                    <div class="typing-dots">
+                        <span></span>
+                        <span></span>
+                        <span></span>
+                    </div>
+                </div>
+            </div>
+        `;
+        chatbotMessages.appendChild(typingDiv);
+        chatbotMessages.scrollTop = chatbotMessages.scrollHeight;
+        return typingDiv;
+    }
+    
+    // Format bot message (convert markdown-like formatting)
+    function formatBotMessage(text) {
+        return text
+            .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+            .replace(/\n/g, '<br>');
+    }
+    
+    // Send button click
+    chatbotSend.addEventListener('click', function() {
+        sendMessage(chatbotInput.value);
+    });
+    
+    // Enter key press
+    chatbotInput.addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') {
+            sendMessage(chatbotInput.value);
+        }
+    });
+    
+    // Suggestion buttons
+    suggestionBtns.forEach(btn => {
+        btn.addEventListener('click', function() {
+            const suggestion = this.getAttribute('data-suggestion');
+            sendMessage(suggestion);
+        });
+    });
 });
 </script>
 {% endblock %}
