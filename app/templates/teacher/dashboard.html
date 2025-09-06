@@ -2,14 +2,14 @@
 
 {% block content %}
 <div class="row mb-4">
-    <div class="col">
-        <div class="d-flex justify-content-between align-items-center">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mb-3">
             <div>
                 <h1 class="mb-2">
                     <i class="fas fa-chalkboard-teacher me-3"></i>Teacher Dashboard
                 </h1>
                 <p class="text-muted mb-0">
-                    <i class="fas fa-user me-2"></i>Welcome back, {{ current_user.name }}!
+                    <i class="fas fa-user me-2"></i>Welcome back, sanket patil!
                 </p>
             </div>
             <div class="text-end">
@@ -18,23 +18,20 @@
                 </span>
             </div>
         </div>
-    </div>
-    <div class="col-auto">
-        <div class="d-flex flex-wrap gap-2">
-            <a href="{{ url_for('teacher.upload_results_csv') }}" class="btn btn-success btn-lg">
-                <i class="fas fa-file-csv me-2"></i>Upload Results
-            </a>
-            <a href="{{ url_for('teacher.leave_applications') }}" class="btn btn-warning btn-lg">
-                <i class="fas fa-file-alt me-2"></i>Leave Applications
-            </a>
+        
+        <!-- Action buttons row -->
+        <div class="d-flex flex-wrap gap-3 justify-content-start">
             <a href="{{ url_for('teacher.create_subject') }}" class="btn btn-primary btn-lg">
                 <i class="fas fa-plus-circle me-2"></i>Create New Subject
             </a>
             <a href="{{ url_for('teacher.analytics') }}" class="btn btn-info btn-lg">
                 <i class="fas fa-chart-line me-2"></i>Analytics
             </a>
-            <a href="{{ url_for('teacher.enter_results_manual') }}" class="btn btn-success">
-                <i class="fas fa-pen-to-square me-2"></i>Enter Results
+            <a href="{{ url_for('teacher.leave_applications') }}" class="btn btn-warning btn-lg">
+                <i class="fas fa-file-alt me-2"></i>Leave Applications
+            </a>
+            <a href="{{ url_for('teacher.results_hub') }}" class="btn btn-success btn-lg">
+                <i class="fas fa-file-csv me-2"></i>Results
             </a>
         </div>
     </div>
@@ -43,7 +40,7 @@
 <div class="row">
     {% for subject in subjects %}
     <div class="col-md-6 col-lg-4 mb-4">
-        <div class="card slide-in" style="animation-delay: {{ loop.index * 0.1 }}s;">
+        <div class="card slide-in">
             <div class="card-header">
                 <div class="d-flex justify-content-between align-items-center">
                     <h5 class="card-title mb-0">
