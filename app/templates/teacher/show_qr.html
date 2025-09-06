@@ -44,13 +44,13 @@
                         <div class="d-flex align-items-center justify-content-center">
                             <i class="fas fa-clock me-3" style="font-size: 1.5rem;"></i>
                             <div>
-                                <strong>QR Code expires in: <span id="countdown" class="text-danger">30</span> seconds</strong>
+                                <strong>QR Code expires in: <span id="countdown" class="text-danger"></span> seconds</strong>
                             </div>
                         </div>
                     </div>
                     <p class="text-muted">
                         <i class="fas fa-info-circle me-1"></i>
-                        Students must scan this QR code within 30 seconds to mark attendance.
+                        Students must scan this QR code before it expires.
                     </p>
                 </div>
                 
@@ -67,25 +67,24 @@
 
 {% block scripts %}
 <script>
-// Countdown timer for QR code expiration (30 seconds)
-let timeLeft = 30;
+// Countdown timer based on actual expiration
 const countdownElement = document.getElementById('countdown');
+const expiresAt = new Date('{{ expires_at.isoformat() }}Z');
 
-const countdown = setInterval(function() {
-    timeLeft--;
+function updateCountdown() {
+    const now = new Date();
+    let timeLeft = Math.max(0, Math.floor((expiresAt - now) / 1000));
     countdownElement.textContent = timeLeft;
-    
-    // Change color based on time remaining
+
     if (timeLeft <= 10) {
-        countdownElement.style.color = '#dc3545'; // Red
+        countdownElement.style.color = '#dc3545';
         countdownElement.style.fontWeight = 'bold';
     } else if (timeLeft <= 20) {
-        countdownElement.style.color = '#fd7e14'; // Orange
+        countdownElement.style.color = '#fd7e14';
     }
-    
+
     if (timeLeft <= 0) {
-        clearInterval(countdown);
-        countdownElement.textContent = '0';
+        clearInterval(timerId);
         document.querySelector('.qr-container').innerHTML = 
             `<div class="alert alert-danger">
                 <div class="text-center">
@@ -95,6 +94,9 @@ const countdown = setInterval(function() {
                 </div>
             </div>`;
     }
-}, 1000);
+}
+
+updateCountdown();
+const timerId = setInterval(updateCountdown, 1000);
 </script>
 {% endblock %}

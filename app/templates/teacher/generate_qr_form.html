@@ -39,13 +39,33 @@
                             </div>
                         </div>
                     </div>
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-4">
+                                <label for="expiry_value" class="form-label">
+                                    <i class="fas fa-hourglass-half me-2"></i>QR Expiry
+                                </label>
+                                <div class="input-group">
+                                    <input type="number" min="1" step="1" class="form-control form-control-lg" id="expiry_value" name="expiry_value" value="{{ (qr_expiry_seconds // 60) if qr_expiry_seconds >= 60 else qr_expiry_seconds }}" required>
+                                    <select id="expiry_unit" name="expiry_unit" class="form-select form-select-lg">
+                                        <option value="seconds" {% if qr_expiry_seconds < 60 %}selected{% endif %}>Seconds</option>
+                                        <option value="minutes" {% if qr_expiry_seconds >= 60 %}selected{% endif %}>Minutes</option>
+                                    </select>
+                                </div>
+                                <small class="text-muted">
+                                    <i class="fas fa-info-circle me-1"></i>How long the QR remains valid after generation
+                                </small>
+                            </div>
+                        </div>
+                    </div>
                     
                     <div class="alert alert-info">
                         <div class="d-flex align-items-start">
                             <i class="fas fa-info-circle me-3 mt-1" style="font-size: 1.2rem;"></i>
                             <div>
                                 <strong>Important Note:</strong><br>
-                                The QR code will be valid for only 30 seconds after generation.
+                                The QR code will be valid for <strong>{{ qr_expiry_seconds }} seconds</strong> (or your chosen value) after generation.
                                 Students must scan it within this time to mark their attendance.
                             </div>
                         </div>

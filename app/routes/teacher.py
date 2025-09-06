@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, redirect, url_for, flash, request, jsonify, send_file
+from flask import Blueprint, render_template, redirect, url_for, flash, request, jsonify, send_file, session
 from flask_login import login_required, current_user
 from ..models.models import Subject, QRCode, Attendance, User, Enrollment, LeaveApplication, Result, db
 from datetime import datetime, timedelta
@@ -31,7 +31,36 @@ def dashboard():
     # Load enrollments for each subject to avoid lazy loading issues
     for subject in subjects:
         _ = subject.enrollments  # This triggers the relationship loading
-    return render_template('teacher/dashboard.html', subjects=subjects)
+    current_expiry_seconds = session.get('qr_expiry_seconds', 30)
+    return render_template('teacher/dashboard.html', subjects=subjects, qr_expiry_seconds=current_expiry_seconds)
+
+@teacher_bp.route('/teacher/qr-expiry', methods=['POST'])
+@teacher_required
+def set_qr_expiry():
+    try:
+        value = request.form.get('expiry_value')
+        unit = request.form.get('expiry_unit', 'seconds')
+        if not value:
+            flash('Please provide an expiry value.', 'error')
+            return redirect(url_for('teacher.dashboard'))
+        try:
+            numeric = int(value)
+        except ValueError:
+            flash('Expiry value must be an integer.', 'error')
+            return redirect(url_for('teacher.dashboard'))
+
+        if numeric <= 0:
+            flash('Expiry value must be greater than zero.', 'error')
+            return redirect(url_for('teacher.dashboard'))
+
+        seconds = numeric * 60 if unit == 'minutes' else numeric
+        # Cap to a reasonable max (e.g., 2 hours)
+        seconds = min(seconds, 2 * 60 * 60)
+        session['qr_expiry_seconds'] = seconds
+        flash(f'QR expiry set to {seconds} seconds.', 'success')
+    except Exception:
+        flash('Failed to update QR expiry.', 'error')
+    return redirect(url_for('teacher.dashboard'))
 
 @teacher_bp.route('/teacher/subject/create', methods=['GET', 'POST'])
 @teacher_required
@@ -68,10 +97,13 @@ def generate_qr(subject_id):
         # Get class timing from form
         class_start_time = request.form.get('class_start_time')
         class_end_time = request.form.get('class_end_time')
+        # Get expiry from form (value + unit)
+        expiry_value = request.form.get('expiry_value')
+        expiry_unit = request.form.get('expiry_unit', 'seconds')
         
         if not class_start_time or not class_end_time:
             flash('Please provide both start and end times.', 'error')
-            return render_template('teacher/generate_qr_form.html', subject=subject)
+            return render_template('teacher/generate_qr_form.html', subject=subject, qr_expiry_seconds=session.get('qr_expiry_seconds', 30))
         
         # Parse datetime strings
         try:
@@ -84,11 +116,25 @@ def generate_qr(subject_id):
                 
         except ValueError:
             flash('Invalid date/time format.', 'error')
-            return render_template('teacher/generate_qr_form.html', subject=subject)
+            return render_template('teacher/generate_qr_form.html', subject=subject, qr_expiry_seconds=session.get('qr_expiry_seconds', 30))
         
         # Create QR code token
         token = secrets.token_urlsafe(32)
-        expires_at = datetime.utcnow() + timedelta(seconds=30)  # QR valid for 30 seconds
+        # Determine expiry seconds: form value overrides session/default
+        try:
+            if expiry_value:
+                numeric = int(expiry_value)
+                if numeric <= 0:
+                    raise ValueError('Expiry must be > 0')
+                expiry_seconds = numeric * 60 if expiry_unit == 'minutes' else numeric
+            else:
+                expiry_seconds = session.get('qr_expiry_seconds', 30)
+        except Exception:
+            flash('Invalid expiry value provided.', 'error')
+            return render_template('teacher/generate_qr_form.html', subject=subject, qr_expiry_seconds=session.get('qr_expiry_seconds', 30))
+        # Cap expiry to max 2 hours
+        expiry_seconds = min(expiry_seconds, 2 * 60 * 60)
+        expires_at = datetime.utcnow() + timedelta(seconds=expiry_seconds)
         
         qr_code = QRCode(
             subject_id=subject_id,
@@ -125,7 +171,14 @@ def generate_qr(subject_id):
                              class_start_time=start_time,
                              class_end_time=end_time)
     
-    return render_template('teacher/generate_qr_form.html', subject=subject)
+    return render_template('teacher/generate_qr_form.html', subject=subject, qr_expiry_seconds=session.get('qr_expiry_seconds', 30))
+
+@teacher_bp.route('/teacher/results', methods=['GET'])
+@teacher_required
+def results_hub():
+    subjects = Subject.query.filter_by(teacher_id=current_user.id).all()
+    students = User.query.filter_by(role='student').all()
+    return render_template('teacher/results_manage.html', subjects=subjects, students=students)
 
 @teacher_bp.route('/teacher/subject/<int:subject_id>/attendance')
 @teacher_required
