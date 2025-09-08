@@ -236,8 +236,13 @@
 {% block scripts %}
 <script>
 let html5QrcodeScanner;
+let isSubmittingAttendance = false;
 
 function onScanSuccess(decodedText, decodedResult) {
+    if (isSubmittingAttendance) {
+        return; // Debounce multiple scan callbacks
+    }
+    isSubmittingAttendance = true;
     try {
         const data = JSON.parse(decodedText);
         document.getElementById('result').innerHTML = '<div class="alert alert-info"><i class="fas fa-spinner fa-spin me-2"></i>Processing...</div>';
@@ -271,14 +276,17 @@ function onScanSuccess(decodedText, decodedResult) {
                 // Stop scanner after successful scan
                 stopScanning();
             }
+            isSubmittingAttendance = false;
         })
         .catch(error => {
             document.getElementById('result').innerHTML = 
                 `<div class="alert alert-danger"><i class="fas fa-exclamation-triangle me-2"></i>Error: ${error.message}</div>`;
+            isSubmittingAttendance = false;
         });
     } catch (e) {
         document.getElementById('result').innerHTML = 
             '<div class="alert alert-danger"><i class="fas fa-exclamation-triangle me-2"></i>Invalid QR code format</div>';
+        isSubmittingAttendance = false;
     }
 }
 
