@@ -251,7 +251,8 @@ def export_attendance(subject_id):
     present_subq = db.session.query(
         Attendance.student_id.label('student_id'),
         db.func.min(Attendance.marked_at).label('marked_at'),
-        db.func.min(Attendance.qr_code_id).label('qr_code_id')
+        db.func.min(Attendance.qr_code_id).label('qr_code_id'),
+        db.func.min(Attendance.ip_address).label('ip_address')
     ).filter(
         Attendance.subject_id == subject_id,
         db.func.date(Attendance.marked_at) == date
@@ -262,6 +263,7 @@ def export_attendance(subject_id):
         User.registration_number,
         Enrollment.roll_number,
         present_subq.c.marked_at,
+        present_subq.c.ip_address,
         QRCode.class_start_time,
         QRCode.class_end_time
     ).join(
@@ -445,35 +447,75 @@ def analytics():
     weekly_labels = [wk.strftime('%Y-%m-%d') for wk in week_keys_sorted]
     weekly_values = [round(sum(vals) / len(vals), 2) if vals else 0 for wk, vals in [(wk, by_week[wk]) for wk in week_keys_sorted]]
 
-    # Monthly trends (last 12 months)
-    qr_month_rows = db.session.query(QRCode.subject_id, db.func.date_trunc('month', QRCode.class_start_time)).\
-        filter(QRCode.subject_id.in_(subject_ids)).\
-        filter(QRCode.class_start_time.isnot(None)).all()
+    # Monthly trends (last 12 months) - handle SQLite vs PostgreSQL
+    # Determine SQL dialect safely (session bind may be None before first query)
+    try:
+        bind = db.session.get_bind() or db.engine
+        dialect = bind.dialect.name
+    except Exception:
+        dialect = 'sqlite'
+    if dialect == 'sqlite':
+        qr_month_rows = db.session.query(
+            QRCode.subject_id,
+            db.func.strftime('%Y-%m', QRCode.class_start_time)
+        ).filter(
+            QRCode.subject_id.in_(subject_ids)
+        ).filter(
+            QRCode.class_start_time.isnot(None)
+        ).all()
+        att_month_rows = db.session.query(
+            db.func.strftime('%Y-%m', Attendance.marked_at),
+            db.func.count(Attendance.id)
+        ).filter(
+            Attendance.subject_id.in_(subject_ids)
+        ).group_by(
+            db.func.strftime('%Y-%m', Attendance.marked_at)
+        ).all()
+    else:
+        qr_month_rows = db.session.query(
+            QRCode.subject_id,
+            db.func.to_char(db.func.date_trunc('month', QRCode.class_start_time), 'YYYY-MM')
+        ).filter(
+            QRCode.subject_id.in_(subject_ids)
+        ).filter(
+            QRCode.class_start_time.isnot(None)
+        ).all()
+        att_month_rows = db.session.query(
+            db.func.to_char(db.func.date_trunc('month', Attendance.marked_at), 'YYYY-MM'),
+            db.func.count(Attendance.id)
+        ).filter(
+            Attendance.subject_id.in_(subject_ids)
+        ).group_by(
+            db.func.to_char(db.func.date_trunc('month', Attendance.marked_at), 'YYYY-MM')
+        ).all()
+
     sessions_by_month = defaultdict(set)
-    for sid, month_dt in qr_month_rows:
-        if month_dt is not None:
-            sessions_by_month[month_dt.date()].add(sid)
-    att_month_rows = db.session.query(db.func.date_trunc('month', Attendance.marked_at), db.func.count(Attendance.id)).\
-        filter(Attendance.subject_id.in_(subject_ids)).\
-        group_by(db.func.date_trunc('month', Attendance.marked_at)).all()
-    attendance_by_month = {month_dt.date(): cnt for month_dt, cnt in att_month_rows}
+    for sid, month_key in qr_month_rows:
+        if month_key is not None:
+            sessions_by_month[month_key].add(sid)
+    attendance_by_month = {month_key: cnt for month_key, cnt in att_month_rows}
+
+    # Build last 12 month keys as strings 'YYYY-MM'
+    first_of_month = datetime.utcnow().date().replace(day=1)
+    month_keys = []
+    y = first_of_month.year
+    m = first_of_month.month
+    for _ in range(12):
+        month_keys.append(f"{y:04d}-{m:02d}")
+        m -= 1
+        if m == 0:
+            m = 12
+            y -= 1
+    month_keys.reverse()
+
     monthly_labels = []
     monthly_values = []
-    first_of_month = datetime.utcnow().date().replace(day=1)
-    months = []
-    for i in range(11, -1, -1):
-        y = first_of_month.year
-        m = first_of_month.month - i
-        while m <= 0:
-            y -= 1
-            m += 12
-        months.append(datetime(y, m, 1).date())
-    for mkey in months:
-        sid_set = sessions_by_month.get(mkey, set())
+    for mk in month_keys:
+        sid_set = sessions_by_month.get(mk, set())
         denom = sum(enrollment_counts.get(s, 0) for s in sid_set)
-        numer = attendance_by_month.get(mkey, 0)
+        numer = attendance_by_month.get(mk, 0)
         pct = round((numer / denom) * 100, 2) if denom > 0 else 0
-        monthly_labels.append(mkey.strftime('%Y-%m'))
+        monthly_labels.append(mk)
         monthly_values.append(pct)
 
     # Heatmap over last 30 days per subject
