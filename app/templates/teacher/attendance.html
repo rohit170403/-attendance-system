@@ -57,7 +57,7 @@
                             <div class="card bg-primary text-white">
                                 <div class="card-body text-center">
                                     <i class="fas fa-users mb-2" style="font-size: 2rem;"></i>
-                                    <h4>{{ attendance_records|length }}</h4>
+                                    <h4>{{ present_count }}</h4>
                                     <p class="mb-0">Students Present</p>
                                 </div>
                             </div>
@@ -66,7 +66,7 @@
                             <div class="card bg-success text-white">
                                 <div class="card-body text-center">
                                     <i class="fas fa-percentage mb-2" style="font-size: 2rem;"></i>
-                                    <h4>{{ "%.1f"|format((attendance_records|length / (subject.enrollments|length if subject.enrollments else 1)) * 100) }}%</h4>
+                                    <h4>{{ "%.1f"|format(attendance_rate) }}%</h4>
                                     <p class="mb-0">Attendance Rate</p>
                                 </div>
                             </div>

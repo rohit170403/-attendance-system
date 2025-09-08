@@ -194,30 +194,44 @@ def view_attendance(subject_id):
     
     date = request.args.get('date', datetime.utcnow().date().isoformat())
     
-    # Get all attendance records for the subject on the specified date with class timing
-    attendance_records = db.session.query(
-        User.name, 
-        User.registration_number,
-        Enrollment.roll_number,
-        Attendance.marked_at,
-        Attendance.ip_address,
-        QRCode.class_start_time,
-        QRCode.class_end_time
-    ).join(
-        Attendance, User.id == Attendance.student_id
-    ).join(
-        Enrollment, User.id == Enrollment.student_id
-    ).join(
-        QRCode, Attendance.qr_code_id == QRCode.id
+    # Build a subquery of unique attendees for the selected date (one row per student)
+    present_subq = db.session.query(
+        Attendance.student_id.label('student_id'),
+        db.func.min(Attendance.marked_at).label('marked_at'),
+        db.func.min(Attendance.qr_code_id).label('qr_code_id'),
+        db.func.min(Attendance.ip_address).label('ip_address')
     ).filter(
         Attendance.subject_id == subject_id,
         db.func.date(Attendance.marked_at) == date
-    ).all()
-    
+    ).group_by(Attendance.student_id).subquery()
+
+    # Join unique attendees with User, Enrollment and QRCode for display
+    attendance_records = db.session.query(
+        User.name,
+        User.registration_number,
+        Enrollment.roll_number,
+        present_subq.c.marked_at,
+        present_subq.c.ip_address,
+        QRCode.class_start_time,
+        QRCode.class_end_time
+    ).join(
+        present_subq, User.id == present_subq.c.student_id
+    ).join(
+        Enrollment, (User.id == Enrollment.student_id) & (Enrollment.subject_id == subject_id)
+    ).join(
+        QRCode, present_subq.c.qr_code_id == QRCode.id, isouter=True
+    ).order_by(Enrollment.roll_number.asc()).all()
+
+    present_count = len(attendance_records)
+    total_enrolled = len(subject.enrollments) if subject.enrollments else 0
+    attendance_rate = round((present_count / total_enrolled) * 100, 1) if total_enrolled > 0 else 0.0
+
     return render_template('teacher/attendance.html',
                          subject=subject,
                          attendance_records=attendance_records,
-                         date=date)
+                         date=date,
+                         present_count=present_count,
+                         attendance_rate=attendance_rate)
 
 @teacher_bp.route('/teacher/subject/<int:subject_id>/export')
 @teacher_required
@@ -233,25 +247,30 @@ def export_attendance(subject_id):
     
     date = request.args.get('date', datetime.utcnow().date().isoformat())
     
-    # Get all attendance records for the subject on the specified date with class timing
-    attendance_records = db.session.query(
-        User.name, 
-        User.registration_number,
-        Enrollment.roll_number,
-        Attendance.marked_at,
-        Attendance.ip_address,
-        QRCode.class_start_time,
-        QRCode.class_end_time
-    ).join(
-        Attendance, User.id == Attendance.student_id
-    ).join(
-        Enrollment, User.id == Enrollment.student_id
-    ).join(
-        QRCode, Attendance.qr_code_id == QRCode.id
+    # De-duplicate attendees for CSV export (one row per student)
+    present_subq = db.session.query(
+        Attendance.student_id.label('student_id'),
+        db.func.min(Attendance.marked_at).label('marked_at'),
+        db.func.min(Attendance.qr_code_id).label('qr_code_id')
     ).filter(
         Attendance.subject_id == subject_id,
         db.func.date(Attendance.marked_at) == date
-    ).all()
+    ).group_by(Attendance.student_id).subquery()
+
+    attendance_records = db.session.query(
+        User.name,
+        User.registration_number,
+        Enrollment.roll_number,
+        present_subq.c.marked_at,
+        QRCode.class_start_time,
+        QRCode.class_end_time
+    ).join(
+        present_subq, User.id == present_subq.c.student_id
+    ).join(
+        Enrollment, (User.id == Enrollment.student_id) & (Enrollment.subject_id == subject_id)
+    ).join(
+        QRCode, present_subq.c.qr_code_id == QRCode.id, isouter=True
+    ).order_by(Enrollment.roll_number.asc()).all()
     
     # Create CSV in memory
     output = io.StringIO()
