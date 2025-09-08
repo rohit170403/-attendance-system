@@ -1,0 +1,5 @@
+[33m4b65940[m[33m ([m[1;36mHEAD -> [m[1;32mmain[m[33m, [m[1;31morigin/main[m[33m)[m Update teacher routes and templates with latest changes
+[33m947c7d3[m Update teacher dashboard layout and button positioning
+[33m85d7bbf[m chore(security): remove tracked secrets and bytecode; .gitignore enforced
+[33m616bb03[m chore: initial commit of attendance system
+[33m1fda878[m Switch to psycopg2 and force Python 3.11 for Render compatibility

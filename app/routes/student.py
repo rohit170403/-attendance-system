@@ -14,7 +14,7 @@ def student_required(f):
     def decorated_function(*args, **kwargs):
         if current_user.role != 'student':
             flash('Access denied.', 'error')
-            return redirect(url_for('main.dashboard'))
+            return redirect(url_for('teacher.dashboard'))
         return f(*args, **kwargs)
     return decorated_function
 
