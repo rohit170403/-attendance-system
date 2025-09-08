@@ -217,7 +217,7 @@ def view_attendance(subject_id):
     ).join(
         present_subq, User.id == present_subq.c.student_id
     ).join(
-        Enrollment, (User.id == Enrollment.student_id) & (Enrollment.subject_id == subject_id)
+        Enrollment, (User.id == Enrollment.student_id) & (Enrollment.subject_id == subject_id), isouter=True
     ).join(
         QRCode, present_subq.c.qr_code_id == QRCode.id, isouter=True
     ).order_by(Enrollment.roll_number.asc()).all()
@@ -269,7 +269,7 @@ def export_attendance(subject_id):
     ).join(
         present_subq, User.id == present_subq.c.student_id
     ).join(
-        Enrollment, (User.id == Enrollment.student_id) & (Enrollment.subject_id == subject_id)
+        Enrollment, (User.id == Enrollment.student_id) & (Enrollment.subject_id == subject_id), isouter=True
     ).join(
         QRCode, present_subq.c.qr_code_id == QRCode.id, isouter=True
     ).order_by(Enrollment.roll_number.asc()).all()
