@@ -2,6 +2,7 @@ from flask import Blueprint, render_template, redirect, url_for, flash, request
 from flask_login import login_user, logout_user, login_required, current_user
 from ..models.models import User, db
 from werkzeug.security import generate_password_hash
+from sqlalchemy import func
 
 auth_bp = Blueprint('auth', __name__)
 
@@ -14,12 +15,12 @@ def login():
             return redirect(url_for('student.dashboard'))
         
     if request.method == 'POST':
-        identifier = request.form.get('identifier')  # Email or registration number
-        password = request.form.get('password')
+        identifier = (request.form.get('identifier') or '').strip()  # Email or registration number
+        password = request.form.get('password') or ''
         
         # Try to find user by email or registration number
         user = User.query.filter(
-            (User.email == identifier) | (User.registration_number == identifier)
+            (func.lower(User.email) == identifier.lower()) | (User.registration_number == identifier)
         ).first()
         
         if user and user.check_password(password):

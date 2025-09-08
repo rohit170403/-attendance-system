@@ -1,6 +1,7 @@
 from flask import Blueprint, render_template, redirect, url_for, flash, request, jsonify, send_file
 from flask_login import login_required, current_user
 from ..models.models import Subject, QRCode, Attendance, Enrollment, LeaveApplication, Result, db
+from sqlalchemy.exc import IntegrityError
 from datetime import datetime, date
 from functools import wraps
 import json
@@ -14,7 +15,7 @@ def student_required(f):
     def decorated_function(*args, **kwargs):
         if current_user.role != 'student':
             flash('Access denied.', 'error')
-            return redirect(url_for('main.dashboard'))
+            return redirect(url_for('teacher.dashboard'))
         return f(*args, **kwargs)
     return decorated_function
 
@@ -258,7 +259,7 @@ def mark_attendance():
         ).first():
             return jsonify({'error': 'Attendance already marked'}), 400
             
-        # Mark attendance
+        # Mark attendance with race-condition safe insert
         attendance = Attendance(
             student_id=current_user.id,
             subject_id=subject_id,
@@ -267,7 +268,11 @@ def mark_attendance():
             device_info=request.headers.get('User-Agent', '')
         )
         db.session.add(attendance)
-        db.session.commit()
+        try:
+            db.session.commit()
+        except IntegrityError:
+            db.session.rollback()
+            return jsonify({'error': 'Attendance already marked'}), 409
         
         # Return success with class timing information
         return jsonify({
